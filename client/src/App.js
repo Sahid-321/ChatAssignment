@@ -108,6 +108,8 @@ function App() {
           </div>
         )}
       </div>
+
+      {loading && <p>NOTE: Wait for few seconds while loading because backend is deployed on render...</p>}
     </div>
   );
 }
