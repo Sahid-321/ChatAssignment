@@ -1,44 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
-import axios from 'axios';
-import './App.css'; // Move styles to an external file for maintainability
+import React, { useState, useEffect } from "react";
+import io from "socket.io-client";
+import axios from "axios";
+import "./App.css"; // Move styles to an external file for maintainability
 
-const socket = io('https://chat-assignment-api.vercel.app');
+const socket = io("https://chatassignment-api.onrender.com");
 
 function App() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    const response = await axios.post('https://chat-assignment-api.vercel.app/api/auth/signup', { username, password });
+    setLoading(true);
+    const response = await axios.post(
+      "https://chatassignment-api.onrender.com/api/auth/signup",
+      { username, password }
+    );
     alert(response.data.message);
+    setLoading(false);
   };
 
   const handleLogin = async () => {
-    const response = await axios.post('https://chat-assignment-api.vercel.app/api/auth/login', { username, password });
+    setLoading(true);
+    const response = await axios.post(
+      "https://chatassignment-api.onrender.com/api/auth/login",
+      { username, password }
+    );
     setToken(response.data.token);
     socket.auth = { token: response.data.token };
-    alert('Logged in');
+    alert("Logged in");
+    setLoading(false);
   };
 
   const sendMessage = () => {
-    socket.emit('sendMessage', message);
-    setMessage('');
+    socket.emit("sendMessage", message);
+    setMessage("");
   };
 
   useEffect(() => {
-    socket.on('receiveMessage', (msg) => {
+    socket.on("receiveMessage", (msg) => {
       setMessages((prev) => [...prev, msg]);
     });
-  
+
     return () => {
-      socket.off('receiveMessage');
+      socket.off("receiveMessage");
     };
   }, []);
-  
+
   return (
     <div className="app">
       <div className="chat-container">
@@ -59,14 +70,28 @@ function App() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <button className="auth-btn" onClick={handleSignup}>Sign Up</button>
-            <button className="auth-btn" onClick={handleLogin}>Log In</button>
+            {loading ? (
+              <button className="auth-btn">Loading ...</button>
+            ) : (
+              <button className="auth-btn" onClick={handleSignup}>
+                Sign Up
+              </button>
+            )}
+            {loading ? (
+              <button className="auth-btn">Loading ...</button>
+            ) : (
+              <button className="auth-btn" onClick={handleLogin}>
+                Log In
+              </button>
+            )}
           </div>
         ) : (
           <div className="chat-section">
             <div className="message-box">
               {messages.map((msg, index) => (
-                <p key={index} className="message">{msg}</p>
+                <p key={index} className="message">
+                  {msg}
+                </p>
               ))}
             </div>
             <div className="input-section">
@@ -76,7 +101,9 @@ function App() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
-              <button className="send-btn" onClick={sendMessage}>Send</button>
+              <button className="send-btn" onClick={sendMessage}>
+                Send
+              </button>
             </div>
           </div>
         )}
