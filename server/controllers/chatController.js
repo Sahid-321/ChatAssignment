@@ -1,12 +1,15 @@
-const sendMessage = (io) => {
-  return (req, res) => {
-    const { message} = req.body;
+const xss = require('xss');
 
-    // Emit the message to the room via Socket.IO
-    io.emit('receiveMessage', message);
+const sendMessage = (req, res) => {
+  const { message } = req.body;
+  
+  // Sanitize the input to remove any potential XSS payload
+  const sanitizedMessage = xss(message);
 
-    res.status(200).json({ message: 'Message sent successfully' });
-  };
+  // Broadcast the sanitized message to other users
+  io.emit('receiveMessage', sanitizedMessage);
+
+  res.status(200).json({ message: 'Message sent successfully' });
 };
 
 module.exports = { sendMessage };

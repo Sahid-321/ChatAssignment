@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes');  // Authentication routes (si
 const chatRoutes = require('./routes/chatRoutes');  // Chat routes (message handling)
 const { authenticateSocket } = require('./middleware/authMiddleware');  // JWT-based socket authentication
 const pool = require('./config/db');  // PostgreSQL configuration
+const csurf = require('csurf');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const server = http.createServer(app);
@@ -42,8 +44,22 @@ app.get('/*', function (req, res) {
     res.sendFile(path.join(buildPath, 'index.html'));
 });
 
+// Enable cookie parsing to store CSRF token
+app.use(cookieParser());
+
+// Set up CSRF protection middleware
+const csrfProtection = csurf({ cookie: true });
+
+// Apply csrfProtection middleware globally
+app.use(csrfProtection);
+
+// Route for retrieving the CSRF token
+app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // Routes
-app.use('/api/auth', authRoutes);  // Auth routes
+app.use('/api/auth', csrfProtection, authRoutes);  // Auth routes
 app.use('/api/chat', chatRoutes);  // Chat routes
 
 // Socket.IO server initialization
