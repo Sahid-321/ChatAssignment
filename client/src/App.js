@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import './App.css'; // Move styles to an external file for maintainability
 
-const socket = io('http://localhost:3000');
+const socket = io('https://chat-assignment-api.vercel.app');
 
 function App() {
   const [username, setUsername] = useState('');
@@ -13,12 +13,12 @@ function App() {
   const [token, setToken] = useState(null);
 
   const handleSignup = async () => {
-    const response = await axios.post('http://localhost:3000/api/auth/signup', { username, password });
+    const response = await axios.post('https://chat-assignment-api.vercel.app/api/auth/signup', { username, password });
     alert(response.data.message);
   };
 
   const handleLogin = async () => {
-    const response = await axios.post('http://localhost:3000/api/auth/login', { username, password });
+    const response = await axios.post('https://chat-assignment-api.vercel.app/api/auth/login', { username, password });
     setToken(response.data.token);
     socket.auth = { token: response.data.token };
     alert('Logged in');
