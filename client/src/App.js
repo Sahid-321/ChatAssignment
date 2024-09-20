@@ -18,22 +18,11 @@ function App() {
   };
 
   const handleLogin = async () => {
-    // Fetch CSRF token
-    const csrfResponse = await axios.get('http://localhost:3000/api/csrf-token');
-    const csrfToken = csrfResponse.data.csrfToken;
-  
-    // Include CSRF token in the login request
-    const response = await axios.post(
-      'http://localhost:3000/api/auth/login',
-      { username, password },
-      { headers: { 'X-CSRF-Token': csrfToken } }
-    );
-    
+    const response = await axios.post('http://localhost:3000/api/auth/login', { username, password });
     setToken(response.data.token);
     socket.auth = { token: response.data.token };
     alert('Logged in');
   };
-  
 
   const sendMessage = () => {
     socket.emit('sendMessage', message);
