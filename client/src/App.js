@@ -39,7 +39,7 @@ function App() {
     };
   }, []);
   
-console.log(message, "message");
+console.log(messages, "message");
   return (
     <div>
       <h1>Real-Time Chat</h1>

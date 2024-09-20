@@ -1,50 +1,89 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
 const cors = require('cors');
-const { Pool } = require('pg');
-const authRoutes = require('./routes/authRoutes');
-const chatRoutes = require('./routes/chatRoutes');
-const { authenticateSocket } = require('./middleware/authMiddleware');
-const pool = require('./config/db')
+const { Server } = require('socket.io');
+const path = require('path');
+const authRoutes = require('./routes/authRoutes');  // Authentication routes (signup/signin)
+const chatRoutes = require('./routes/chatRoutes');  // Chat routes (message handling)
+const { authenticateSocket } = require('./middleware/authMiddleware');  // JWT-based socket authentication
+const pool = require('./config/db');  // PostgreSQL configuration
+
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
-const path = require('path');
 
+// Allowed CORS Origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  
+];
 
-// Static files
+// CORS Middleware
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204
+}));
+
+app.use(express.json());
+
+// Serving static files from the React app
 const buildPath = path.join(__dirname, "../client/build");
 app.use(express.static(buildPath));
 app.get('/*', function (req, res) {
-  res.sendFile(path.join(buildPath, 'index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
-
-// Middlewares
-app.use(cors({
-    origin: 'http://localhost:3000',  // Allow requests only from your frontend's URL
-    credentials: true,                // Enable credentials if needed (cookies, headers, etc.)
-  }));
-app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
+app.use('/api/auth', authRoutes);  // Auth routes
+app.use('/api/chat', chatRoutes);  // Chat routes
 
-// Real-time chat functionality with socket.io
-io.use(authenticateSocket).on('connection', (socket) => {
-  console.log('New client connected');
-
-  socket.on('sendMessage', (message) => {
-    io.emit('receiveMessage', message);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
-  });
+// Socket.IO server initialization
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204
+  }
 });
 
+// Storing `io` in the app for future use (optional)
+app.set("io", io);
+
+// Handle socket connection
+io.on("connection", (socket) => {
+    console.log('Client connected with ID:', socket.id);
+
+    // Handle incoming message
+    socket.on("sendMessage", (message) => {
+        console.log('Message received:', message);
+        io.emit("receiveMessage", message);  // Broadcast the message to all clients
+    });
+
+    // Handle disconnection
+    socket.on("disconnect", () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+// Database connection
+pool.connect((err, client, done) => {
+    if (err) throw new Error('Failed to connect to database:', err);
+    console.log('Connected to PostgreSQL database.');
+});
+
+// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
